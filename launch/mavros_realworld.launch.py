@@ -4,7 +4,7 @@ import launch
 import os
 import launch_ros
 
-from launch_ros.actions import Node, PushROSNamespace, SetParameter
+from launch_ros.actions import Node, SetParameter
 from launch.actions import GroupAction, IncludeLaunchDescription, DeclareLaunchArgument
 from launch.substitutions import (
     LaunchConfiguration,
@@ -60,44 +60,23 @@ def generate_launch_description():
         "log_output": "screen",
         "fcu_protocol": "v2.0",
         "respawn_mavros": str(respawn_mavros),
-        "namespace": "mavros",
+        "namespace": uav_name + "/mavros",
         "pluginlists_yaml":  this_pkg_path + "/config/mavros_plugins.yaml",
         "config_yaml": this_pkg_path + "/config/mavros_px4_config_old_fw.yaml" if OLD_PX4_FW else this_pkg_path + "/config/mavros_px4_config.yaml",
     }
 
     print(px4_launch_arguments.items())
 
-    launch_xml_include_with_namespace = GroupAction(
-        actions=[
-            # push_ros_namespace first to set namespace of included nodes for following actions
-            PushROSNamespace(uav_name),
-            IncludeLaunchDescription(
-                XMLLaunchDescriptionSource(
-                    os.path.join(
-                        get_package_share_directory('mrs_uav_px4_api'),
-                        'launch/mavros.launch')
-                    ),
-                    launch_arguments=px4_launch_arguments.items()
-            ),
-        ],
-        # parameters=[
-        #     {"config/garmin/frame_id": uav_name + "/garmin"},
-        # ],
-        # parameters=[
-        #     {"fcu_url": fcu_url},
-        #     {"gcs_url": gcs_url},
-        #     {"tgt_system": tgt_system},
-        #     {"tgt_component": 1},
-        #     {"log_output": "screen"},
-        #     {"fcu_protocol": "v2.0"},
-        #     {"respawn_mavros": respawn_mavros},
-        #     {"namespace": f"{namespace}/mavros"},
-        #     {"pluginlists_yaml": get_package_share_directory("mavros") + "/launch/px4_pluginlists.yaml"},
-        #     {"config_yaml": configs},
-        # ],
+    ld.add_action(
+        IncludeLaunchDescription(
+            XMLLaunchDescriptionSource(
+                os.path.join(
+                    get_package_share_directory('mrs_uav_px4_api'),
+                    'launch/mavros.launch')
+                ),
+                launch_arguments=px4_launch_arguments.items()
+        )
     )
-
-    ld.add_action(launch_xml_include_with_namespace)
 
     ld.add_action(
         # Nodes under test

@@ -70,7 +70,10 @@ def generate_launch_description():
     # #{ args from ENV
 
     uav_name=os.getenv('UAV_NAME', "uav1")
-    use_sim_time=os.getenv('USE_SIM_TIME', "false") == "true"
+    # Default to true for SITL simulation, false for real hardware
+    run_type = os.getenv('RUN_TYPE', "simulation")
+    default_sim_time = "true" if run_type == "simulation" else "false"
+    use_sim_time=os.getenv('USE_SIM_TIME', default_sim_time) == "true"
 
     # #} end of args from ENV
 
@@ -137,6 +140,21 @@ def generate_launch_description():
 
     ))
 
+    # Include MAVROS for simulation (SITL with UDP)
+    ld.add_action(
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource([
+                PathJoinSubstitution([
+                    FindPackageShare('mrs_uav_px4_api'),
+                    'launch',
+                    'mavros_sitl.launch.py'
+                    ])
+                ]),
+            condition=IfCondition(simulation)
+            )
+    )
+
+    # Include MAVROS for real-world (hardware via serial)
     ld.add_action(
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
