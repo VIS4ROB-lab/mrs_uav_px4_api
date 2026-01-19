@@ -57,6 +57,9 @@ def generate_launch_description():
         "pluginlists_yaml": this_pkg_path + "/config/mavros_plugins.yaml",
         "config_yaml": this_pkg_path + "/config/mavros_px4_config.yaml",
         "use_sim_time": str(use_sim_time),
+        "base_link_frame_id": uav_name + "/base_link",
+        "odom_frame_id": uav_name + "/odom",
+        "map_frame_id": uav_name + "/map",
     }
 
     print(f"[MAVROS SITL] Connecting to PX4 SITL at {fcu_url}")
@@ -77,7 +80,7 @@ def generate_launch_description():
     ld.add_action(
         launch_ros.actions.Node(
             package='tf2_ros',
-            namespace='',
+            namespace=uav_name,
             executable='static_transform_publisher',
             name='fcu_to_garmin',
             arguments=[

@@ -63,6 +63,9 @@ def generate_launch_description():
         "namespace": uav_name + "/mavros",
         "pluginlists_yaml":  this_pkg_path + "/config/mavros_plugins.yaml",
         "config_yaml": this_pkg_path + "/config/mavros_px4_config_old_fw.yaml" if OLD_PX4_FW else this_pkg_path + "/config/mavros_px4_config.yaml",
+        "base_link_frame_id": uav_name + "/base_link",
+        "odom_frame_id": uav_name + "/odom",
+        "map_frame_id": uav_name + "/map",
     }
 
     print(px4_launch_arguments.items())
@@ -82,10 +85,10 @@ def generate_launch_description():
         # Nodes under test
         launch_ros.actions.Node(
             package='tf2_ros',
-            namespace='',
+            namespace=uav_name,
             executable='static_transform_publisher',
             name='fcu_to_garmin',
-            arguments=["0.0", "0.0", "-0.05", "0", "1.57", "0", uav_name+"/fcu", "garmin"],
+            arguments=["0.0", "0.0", "-0.05", "0", "1.57", "0", uav_name+"/fcu", uav_name+"/garmin"],
         )
     )
 
