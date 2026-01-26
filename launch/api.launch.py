@@ -70,12 +70,15 @@ def generate_launch_description():
     # #{ args from ENV
 
     uav_name=os.getenv('UAV_NAME', "uav1")
-    # Default to true for SITL simulation, false for real hardware
-    run_type = os.getenv('RUN_TYPE', "simulation")
-    default_sim_time = "true" if run_type == "simulation" else "false"
-    use_sim_time=os.getenv('USE_SIM_TIME', default_sim_time) == "true"
+    use_sim_time=os.getenv('USE_SIM_TIME', "false") == "true"
+    old_px4_fw=os.getenv('OLD_PX4_FW', "false") == "true"
 
     # #} end of args from ENV
+
+    if old_px4_fw:
+        mavros_odometry_in_topic = "mavros/local_position/odom"
+    else:
+        mavros_odometry_in_topic = "mavros/odometry/in"
 
     # the first one has the priority
     configs = [
@@ -117,7 +120,7 @@ def generate_launch_description():
                   ("~/ground_truth_in", "ground_truth" if simulation else "rtk/bestpos"),
                   ("~/mavros_state_in", "mavros/state"),
                   ("~/mavros_local_position_in", "mavros/local_position/odom"),
-                  ("~/mavros_odometry_in", "mavros/odometry/in"),
+                  ("~/mavros_odometry_in", mavros_odometry_in_topic),
                   ("~/mavros_global_position_in", "mavros/global_position/global"),
                   ("~/mavros_garmin_in", "mavros/garmin"),
                   ("~/mavros_imu_in", "mavros/imu/data"),
