@@ -143,6 +143,21 @@ def generate_launch_description():
 
     ))
 
+    # Include MAVROS for simulation (SITL with UDP)
+    ld.add_action(
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource([
+                PathJoinSubstitution([
+                    FindPackageShare('mrs_uav_px4_api'),
+                    'launch',
+                    'mavros_sitl.launch.py'
+                    ])
+                ]),
+            condition=IfCondition(simulation)
+            )
+    )
+
+    # Include MAVROS for real-world (hardware via serial)
     ld.add_action(
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
@@ -159,7 +174,7 @@ def generate_launch_description():
     ld.add_action(
         Node(
             package='tf2_ros',
-            namespace='',
+            namespace=uav_name,
             executable='static_transform_publisher',
             name='fcu_to_garmin',
             arguments=["0.0", "0.0625", "-0.009", "0", "1.5708", "-1.5708", uav_name + "/fcu", uav_name + "/garmin"],
