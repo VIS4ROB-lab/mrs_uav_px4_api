@@ -28,7 +28,6 @@
       # # - distance_sensor
       # - rangefinder
       # - vision_speed_estimate
-      # - vision_pose_estimate
       # - px4flow
       # - mocap_pose_estimate
       # - cam_imu_sync
@@ -47,7 +46,6 @@
 
     plugin_allowlist:
       # core
-      # - actuator_control
       - altitude
       - attitude
       - command
@@ -56,7 +54,6 @@
       - imu
       - local_position
       - manual_control
-      # - param
       - rc_io
       - setpoint_accel
       - setpoint_attitude
@@ -70,6 +67,7 @@
       - distance_sensor
       - gps_input
       - gps_rtk
-      # - gps_status
+      - gps_status
       - mag_calibration_status
       - odometry
+      - vision_pose_estimate
