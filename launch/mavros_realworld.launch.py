@@ -6,52 +6,27 @@ import launch_ros
 
 from launch_ros.actions import Node, SetParameter
 from launch.actions import GroupAction, IncludeLaunchDescription, DeclareLaunchArgument
-from launch.substitutions import (
-    LaunchConfiguration,
-    IfElseSubstitution,
-    PythonExpression,
-    PathJoinSubstitution,
-    EnvironmentVariable,
-)
+
 from launch_xml.launch_description_sources import XMLLaunchDescriptionSource
 
 from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
 
-    # launch.logging.get_logger().setLevel(launch.logging.logging.DEBUG)
-
     ld = launch.LaunchDescription()
 
     pkg_name = "mrs_uav_px4_api"
-
     this_pkg_path = get_package_share_directory(pkg_name)
 
-    # #{ args from ENV
-
     uav_name = os.getenv("UAV_NAME", "uav")
-    OLD_PX4_FW = os.getenv("OLD_PX4_FW", "false") == "true"
-
-    if OLD_PX4_FW:
-      fcu_url = "/dev/pixhawk:921600"
-    else:
-      fcu_url = "/dev/pixhawk:2000000"
-
-    gcs_url = "tcp-l://"
+    uav_id = os.getenv("UAV_ID", "1")
     use_sim_time=os.getenv('USE_SIM_TIME', "false") == "true"
     respawn_mavros=os.getenv('respawn_mavros', "false") == "true"
 
-    # #} end of args from ENV
+    fcu_url = "/dev/pixhawk:2000000"
+    gcs_url = "tcp-l://"
 
-    # the first one has the priority
-    # configs = [
-    #     this_pkg_path + '/config/mavros_px4_config.yaml',
-    #     get_package_share_directory("mavros") + "/launch/px4_config.yaml",
-    # ]
-
-    tgt_system = 1
-    namespace = uav_name
-
+    tgt_system = int(uav_id)
     px4_launch_arguments = {
         "fcu_url": fcu_url,
         "gcs_url": gcs_url,
@@ -62,13 +37,14 @@ def generate_launch_description():
         "respawn_mavros": str(respawn_mavros),
         "namespace": uav_name + "/mavros",
         "pluginlists_yaml":  this_pkg_path + "/config/mavros_plugins.yaml",
-        "config_yaml": this_pkg_path + "/config/mavros_px4_config_old_fw.yaml" if OLD_PX4_FW else this_pkg_path + "/config/mavros_px4_config.yaml",
+        "config_yaml": this_pkg_path + "/config/mavros_px4_config.yaml",
         "base_link_frame_id": uav_name + "/base_link",
         "odom_frame_id": uav_name + "/odom",
         "map_frame_id": uav_name + "/map",
     }
 
-    print(px4_launch_arguments.items())
+    print(f"[MAVROS SITL] Connecting to PX4 SITL at {fcu_url}")
+    print(f"[MAVROS SITL] UAV Name: {uav_name}, UAV ID: {uav_id}, Use Sim Time: {use_sim_time}")
 
     ld.add_action(
         IncludeLaunchDescription(
@@ -80,44 +56,6 @@ def generate_launch_description():
                 launch_arguments=px4_launch_arguments.items()
         )
     )
-
-    ld.add_action(
-        # Nodes under test
-        launch_ros.actions.Node(
-            package='tf2_ros',
-            namespace=uav_name,
-            executable='static_transform_publisher',
-            name='fcu_to_garmin',
-            arguments=["0.0", "0.0", "-0.05", "0", "1.57", "0", uav_name+"/fcu", uav_name+"/garmin"],
-        )
-    )
-
-    # ld.add_action(
-
-    #     Node(
-    #         namespace=namespace,
-    #         name='mavros',
-    #         package='mavros',
-    #         executable='mavros_node',
-
-    #         parameters=[
-    #             {"fcu_url": fcu_url},
-    #             {"gcs_url": gcs_url},
-    #             {"tgt_system": tgt_system},
-    #             {"tgt_component": 1},
-    #             {"log_output": "screen"},
-    #             {"fcu_protocol": "v2.0"},
-    #             {"respawn_mavros": respawn_mavros},
-    #             {"namespace": f"{namespace}/mavros"},
-    #             {"pluginlists_yaml": get_package_share_directory("mavros") + "/launch/px4_pluginlists.yaml"},
-    #             {"config_yaml": configs},
-    #        ],
-
-    #        remappings=[
-    #            ("/diagnostics", f"/uav{ID}/diagnostics")
-    #         ],
-    #     )
-    # )
 
     return ld
 
