@@ -23,7 +23,7 @@ def generate_launch_description():
     use_sim_time=os.getenv('USE_SIM_TIME', "false") == "true"
     respawn_mavros=os.getenv('respawn_mavros', "false") == "true"
 
-    fcu_url = "/dev/pixhawk:921600"
+    fcu_url = "/dev/pixhawk:57600"
     gcs_url = "tcp-l://"
 
     tgt_system = int(uav_id)
