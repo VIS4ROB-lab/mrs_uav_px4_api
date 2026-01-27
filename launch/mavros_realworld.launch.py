@@ -23,7 +23,7 @@ def generate_launch_description():
     use_sim_time=os.getenv('USE_SIM_TIME', "false") == "true"
     respawn_mavros=os.getenv('respawn_mavros', "false") == "true"
 
-    fcu_url = "/dev/pixhawk:57600"
+    fcu_url = "/dev/pixhawk:921600"
     gcs_url = "tcp-l://"
 
     tgt_system = int(uav_id)
@@ -42,9 +42,6 @@ def generate_launch_description():
         "odom_frame_id": uav_name + "/odom",
         "map_frame_id": uav_name + "/map",
     }
-
-    print(f"[MAVROS REAL] Connecting to PX4 REAL at {fcu_url}")
-    print(f"[MAVROS REAL] UAV Name: {uav_name}, UAV ID: {uav_id}, Use Sim Time: {use_sim_time}")
 
     ld.add_action(
         IncludeLaunchDescription(

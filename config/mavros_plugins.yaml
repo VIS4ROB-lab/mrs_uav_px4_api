@@ -43,6 +43,7 @@
       # # - debug_value
       # - wind_estimation
       # - log_transfer
+      # - distance_sensor
 
     plugin_allowlist:
       # core
@@ -64,10 +65,9 @@
       - sys_time
 
       # mavros_extras
-      - distance_sensor
       - gps_input
       - gps_rtk
       - gps_status
       - mag_calibration_status
       - odometry
-      - vision_pose_estimate
+      - vision_pose

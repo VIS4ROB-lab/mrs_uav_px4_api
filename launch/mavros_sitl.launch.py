@@ -51,9 +51,6 @@ def generate_launch_description():
         "map_frame_id": uav_name + "/map",
     }
 
-    print(f"[MAVROS SITL] Connecting to PX4 SITL at {fcu_url}")
-    print(f"[MAVROS SITL] UAV Name: {uav_name}, UAV ID: {uav_id}, Use Sim Time: {use_sim_time}")
-
     ld.add_action(
         IncludeLaunchDescription(
             XMLLaunchDescriptionSource(

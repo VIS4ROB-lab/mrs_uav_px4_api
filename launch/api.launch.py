@@ -137,33 +137,36 @@ def generate_launch_description():
 
     ))
 
-    # Include MAVROS for simulation (SITL with UDP)
-    ld.add_action(
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource([
-                PathJoinSubstitution([
-                    FindPackageShare('mrs_uav_px4_api'),
-                    'launch',
-                    'mavros_sitl.launch.py'
+    # Determine which MAVROS launch file to include based on simulation parameter
+    # Only include one to avoid parsing both launch files
+    simulation_value = os.getenv('RUN_TYPE', "simulation") == "simulation"
+    
+    if simulation_value:
+        # Include MAVROS for simulation (SITL with UDP)
+        ld.add_action(
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    PathJoinSubstitution([
+                        FindPackageShare('mrs_uav_px4_api'),
+                        'launch',
+                        'mavros_sitl.launch.py'
                     ])
-                ]),
-            condition=IfCondition(simulation)
+                )
             )
-    )
-
-    # Include MAVROS for real-world (hardware via serial)
-    ld.add_action(
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource([
-                PathJoinSubstitution([
-                    FindPackageShare('mrs_uav_px4_api'),
-                    'launch',
-                    'mavros_realworld.launch.py'
+        )
+    else:
+        # Include MAVROS for real-world (hardware via serial)
+        ld.add_action(
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    PathJoinSubstitution([
+                        FindPackageShare('mrs_uav_px4_api'),
+                        'launch',
+                        'mavros_realworld.launch.py'
                     ])
-                ]),
-            condition=UnlessCondition(simulation)
+                )
             )
-    )
+        )
 
     return ld
 
