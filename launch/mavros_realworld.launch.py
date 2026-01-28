@@ -37,7 +37,7 @@ def generate_launch_description():
         "respawn_mavros": str(respawn_mavros),
         "namespace": uav_name + "/mavros",
         "pluginlists_yaml":  this_pkg_path + "/config/mavros_plugins.yaml",
-        "config_yaml": this_pkg_path + "/config/mavros_px4_config.yaml",
+        "config_yaml": this_pkg_path + "/config/mavros_px4_config.jinja.yaml",
         "base_link_frame_id": uav_name + "/base_link",
         "odom_frame_id": uav_name + "/odom",
         "map_frame_id": uav_name + "/map",
