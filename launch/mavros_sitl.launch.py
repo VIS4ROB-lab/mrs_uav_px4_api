@@ -9,6 +9,8 @@ unlike the hardware version which uses serial ports.
 import launch
 import os
 import launch_ros
+import tempfile
+from jinja2 import Environment, FileSystemLoader
 
 from launch_ros.actions import Node, SetParameter
 from launch.actions import GroupAction, IncludeLaunchDescription, DeclareLaunchArgument
@@ -34,6 +36,24 @@ def generate_launch_description():
     gcs_url = "tcp-l://"
 
     tgt_system = int(uav_id)
+    
+    # Process Jinja template for config
+    config_dir = os.path.join(this_pkg_path, "config")
+    env = Environment(loader=FileSystemLoader(config_dir))
+    template = env.get_template("mavros_px4_config.jinja.yaml")
+    
+    template_vars = {
+        "uav_name": uav_name,
+        "uav_id": uav_id,
+    }
+    
+    rendered_config = template.render(template_vars)
+    
+    # Write rendered config to temporary file
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        f.write(rendered_config)
+        config_yaml_path = f.name
+    
     px4_launch_arguments = {
         "fcu_url": fcu_url,
         "gcs_url": gcs_url,
@@ -44,7 +64,7 @@ def generate_launch_description():
         "respawn_mavros": str(respawn_mavros),
         "namespace": uav_name + "/mavros",
         "pluginlists_yaml": this_pkg_path + "/config/mavros_plugins.yaml",
-        "config_yaml": this_pkg_path + "/config/mavros_px4_config.jinja.yaml",
+        "config_yaml": config_yaml_path,
         "use_sim_time": str(use_sim_time),
         "base_link_frame_id": uav_name + "/base_link",
         "odom_frame_id": uav_name + "/odom",
