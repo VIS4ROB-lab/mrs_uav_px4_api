@@ -71,4 +71,3 @@
       - mag_calibration_status
       - odometry
       - vision_pose
-      - vision_pose_estimate
