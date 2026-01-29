@@ -643,14 +643,15 @@ std::tuple<bool, std::string> MrsUavPx4Api::callbackArming(
   auto srv_out = std::make_shared<mavros_msgs::srv::CommandLong::Request>();
 
   // when REALWORLD AND ARM:=TRUE
-  if (!_simulation_ && request) {
-    ss << "can not arm by service when not in simulation! You should arm the "
-          "drone by the RC controller only!";
-    RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *clock_, 1000,
-                                 "" << ss.str());
+  // if (!_simulation_ && request) {
+  //   ss << "can not arm by service when not in simulation! You should arm the
+  //   "
+  //         "drone by the RC controller only!";
+  //   RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *clock_, 1000,
+  //                                "" << ss.str());
 
-    return {false, ss.str()};
-  }
+  //   return {false, ss.str()};
+  // }
 
   srv_out->broadcast = false;
   srv_out->command = 400;  // the code for arming
@@ -868,18 +869,17 @@ void MrsUavPx4Api::callbackOdometryLocal(
 
   geometry_msgs::msg::PointStamped position;
 
-  position.header.stamp    = odom->header.stamp;
+  position.header.stamp = odom->header.stamp;
   position.header.frame_id = _uav_name_ + "/" + _world_frame_name_;
-  position.point           = odom->pose.pose.position;
+  position.point = odom->pose.pose.position;
 
   double lat, lon, correct_x, correct_y;
 
   if (_capabilities_.produces_position) {
-
     if (_capabilities_.produces_gnss and _ref_latlon_init) {
-
-      // The px4 Azimuthal Equidistant Projection of WGS84 is inconsistent with the UTM conversion is MRS system,
-      // therefore, we convert it back to WGS84 frame and then convert correctly using mrs_lib.
+      // The px4 Azimuthal Equidistant Projection of WGS84 is inconsistent with
+      // the UTM conversion is MRS system, therefore, we convert it back to
+      // WGS84 frame and then convert correctly using mrs_lib.
 
       // BEGIN PX4 CODE
       const double x_rad = (double)odom->pose.pose.position.y / 6371000.0;
@@ -890,8 +890,11 @@ void MrsUavPx4Api::callbackOdometryLocal(
         const double sin_c = sin(c);
         const double cos_c = cos(c);
 
-        const double lat_rad = asin(cos_c * _ref_sin_lat + (x_rad * sin_c * _ref_cos_lat) / c);
-        const double lon_rad = (_ref_lon + atan2(y_rad * sin_c, c * _ref_cos_lat * cos_c - x_rad * _ref_sin_lat * sin_c));
+        const double lat_rad =
+            asin(cos_c * _ref_sin_lat + (x_rad * sin_c * _ref_cos_lat) / c);
+        const double lon_rad =
+            (_ref_lon + atan2(y_rad * sin_c, c * _ref_cos_lat * cos_c -
+                                                 x_rad * _ref_sin_lat * sin_c));
 
         lat = RAD2DEG(lat_rad);
         lon = RAD2DEG(lon_rad);
@@ -910,9 +913,11 @@ void MrsUavPx4Api::callbackOdometryLocal(
       position.point.x = correct_x;
       position.point.y = correct_y;
 
-      RCLCPP_DEBUG(node_->get_logger(), "position_px4_x: %f, position_px4_y: %f", position.point.x, position.point.y);
-      RCLCPP_DEBUG(node_->get_logger(), "correct_mrs_x: %f, correct_mrs_y: %f", correct_x, correct_y);
-
+      RCLCPP_DEBUG(node_->get_logger(),
+                   "position_px4_x: %f, position_px4_y: %f", position.point.x,
+                   position.point.y);
+      RCLCPP_DEBUG(node_->get_logger(), "correct_mrs_x: %f, correct_mrs_y: %f",
+                   correct_x, correct_y);
     }
 
     common_handlers_->publishers.publishPosition(position);
@@ -933,16 +938,13 @@ void MrsUavPx4Api::callbackOdometryLocal(
   // | -------------------- publish odometry -------------------- |
 
   if (_capabilities_.produces_odometry) {
-
     if (_capabilities_.produces_gnss and _ref_latlon_init) {
-
       auto odom_new = *odom;
       odom_new.pose.pose.position.x = correct_x;
       odom_new.pose.pose.position.y = correct_y;
       common_handlers_->publishers.publishOdometry(odom_new);
 
     } else {
-
       common_handlers_->publishers.publishOdometry(*odom);
     }
   }
@@ -1003,15 +1005,13 @@ void MrsUavPx4Api::callbackNavsatFix(
     common_handlers_->publishers.publishGNSS(*msg);
 
     if (!_ref_latlon_init) {
-
-      _ref_lat     = DEG2RAD(msg->latitude);
-      _ref_lon     = DEG2RAD(msg->longitude);
+      _ref_lat = DEG2RAD(msg->latitude);
+      _ref_lon = DEG2RAD(msg->longitude);
       _ref_sin_lat = sin(_ref_lat);
       _ref_cos_lat = cos(_ref_lat);
       mrs_lib::UTM(msg->latitude, msg->longitude, &_ref_utm_x, &_ref_utm_y);
       _ref_latlon_init = true;
     }
-
   }
 }
 
