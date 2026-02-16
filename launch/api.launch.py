@@ -67,6 +67,18 @@ def generate_launch_description():
 
     # #} end of simulation
 
+    # #{ fcu_url
+
+    fcu_url = LaunchConfiguration('fcu_url')
+
+    ld.add_action(DeclareLaunchArgument(
+        'fcu_url',
+        default_value="/dev/pixhawk:921600",
+        description='FCU connection URL (e.g., /dev/pixhawk:921600)'
+    ))
+
+    # #} end of fcu_url
+
     # #{ args from ENV
 
     uav_name=os.getenv('UAV_NAME', "uav1")
@@ -164,7 +176,10 @@ def generate_launch_description():
                         'launch',
                         'mavros_realworld.launch.py'
                     ])
-                )
+                ),
+                launch_arguments={
+                    'fcu_url': fcu_url,
+                }.items()
             )
         )
 

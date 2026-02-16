@@ -8,6 +8,7 @@ from jinja2 import Environment, FileSystemLoader
 
 from launch_ros.actions import Node, SetParameter
 from launch.actions import GroupAction, IncludeLaunchDescription, DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
 
 from launch_xml.launch_description_sources import XMLLaunchDescriptionSource
 
@@ -25,7 +26,14 @@ def generate_launch_description():
     use_sim_time=os.getenv('USE_SIM_TIME', "false") == "true"
     respawn_mavros=os.getenv('respawn_mavros', "false") == "true"
 
-    fcu_url = "/dev/pixhawk:921600"
+    # Declare fcu_url as a launch argument
+    ld.add_action(DeclareLaunchArgument(
+        'fcu_url',
+        default_value="/dev/pixhawk:921600",
+        description='FCU connection URL (e.g., /dev/pixhawk:921600)'
+    ))
+
+    fcu_url = LaunchConfiguration('fcu_url')
     gcs_url = "tcp-l://"
 
     tgt_system = int(uav_id)
