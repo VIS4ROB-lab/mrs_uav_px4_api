@@ -95,6 +95,8 @@ class MrsUavPx4Api : public mrs_uav_hw_api::MrsUavHwApi {
       const mrs_msgs::msg::HwApiVelocityHdgCmd::ConstSharedPtr msg);
   bool callbackPositionCmd(
       const mrs_msgs::msg::HwApiPositionCmd::ConstSharedPtr msg);
+  bool callbackTrajectoryCmd(
+      const mrs_msgs::msg::HwApiTrajectoryCmd::ConstSharedPtr msg);
 
   void callbackTrackerCmd(
       const mrs_msgs::msg::TrackerCommand::ConstSharedPtr msg);
@@ -621,6 +623,17 @@ bool MrsUavPx4Api::callbackPositionCmd(
     [[maybe_unused]] const mrs_msgs::msg::HwApiPositionCmd::ConstSharedPtr
         msg) {
   RCLCPP_INFO_ONCE(node_->get_logger(), "getting position cmd");
+
+  return false;
+}
+
+//}
+
+/* callbackTrajectoryCmd() //{ */
+
+bool MrsUavPx4Api::callbackTrajectoryCmd(
+    [[maybe_unused]] const mrs_msgs::msg::HwApiTrajectoryCmd::ConstSharedPtr msg) {
+  RCLCPP_INFO_ONCE(node_->get_logger(), "getting trajectory cmd");
 
   return false;
 }
