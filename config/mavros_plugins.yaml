@@ -1,5 +1,32 @@
 /**:
   ros__parameters:
+    plugin_allowlist:
+      # core
+      - altitude
+      - attitude
+      - command
+      - global_position
+      - home_position
+      - imu
+      - local_position
+      - manual_control
+      - rc_io
+      - setpoint_accel
+      - setpoint_attitude
+      - setpoint_position
+      - setpoint_raw
+      - setpoint_velocity
+      - sys_status
+      - sys_time
+
+      # mavros_extras
+      - gps_input
+      - gps_rtk
+      - gps_status
+      - mag_calibration_status
+      - odometry
+      - vision_pose
+
     # plugin_denylist:
       
       # # common
@@ -44,30 +71,3 @@
       # - wind_estimation
       # - log_transfer
       # - distance_sensor
-
-    plugin_allowlist:
-      # core
-      - altitude
-      - attitude
-      - command
-      - global_position
-      - home_position
-      - imu
-      - local_position
-      - manual_control
-      - rc_io
-      - setpoint_accel
-      - setpoint_attitude
-      - setpoint_position
-      - setpoint_raw
-      - setpoint_velocity
-      - sys_status
-      - sys_time
-
-      # mavros_extras
-      - gps_input
-      - gps_rtk
-      - gps_status
-      - mag_calibration_status
-      - odometry
-      - vision_pose

@@ -14,6 +14,7 @@ plugin:
     control_group: false
     attitude_rate: true
     attitude:      true
+    trajectory:    false
   
   outputs:
     distance_sensor:      true
