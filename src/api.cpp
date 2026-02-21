@@ -14,12 +14,14 @@
 #include <mrs_lib/publisher_handler.h>
 #include <mrs_lib/service_client_handler.h>
 #include <mrs_lib/subscriber_handler.h>
+#include <mrs_lib/transformer.h>
 
 #include <geometry_msgs/msg/quaternion_stamped.hpp>
 #include <mavros_msgs/msg/actuator_control.hpp>
 #include <mavros_msgs/msg/altitude.hpp>
 #include <mavros_msgs/msg/attitude_target.hpp>
 #include <mavros_msgs/msg/gpsraw.hpp>
+#include <mavros_msgs/msg/position_target.hpp>
 #include <mavros_msgs/msg/rc_in.hpp>
 #include <mavros_msgs/msg/state.hpp>
 #include <mavros_msgs/srv/command_long.hpp>
@@ -69,6 +71,8 @@ class MrsUavPx4Api : public mrs_uav_hw_api::MrsUavHwApi {
   rclcpp::Clock::SharedPtr clock_;
 
   rclcpp::CallbackGroup::SharedPtr callback_group_;
+
+  std::shared_ptr<mrs_lib::Transformer> transformer_;
 
   // | --------------------- status methods --------------------- |
 
@@ -195,6 +199,8 @@ class MrsUavPx4Api : public mrs_uav_hw_api::MrsUavHwApi {
       ph_mavros_attitude_target_;
   mrs_lib::PublisherHandler<mavros_msgs::msg::ActuatorControl>
       ph_mavros_actuator_control_;
+  mrs_lib::PublisherHandler<mavros_msgs::msg::PositionTarget>
+      ph_mavros_position_target_;
 
   // | ------------------------- timers ------------------------- |
 
@@ -404,6 +410,15 @@ void MrsUavPx4Api::initialize(
   ph_mavros_actuator_control_ =
       mrs_lib::PublisherHandler<mavros_msgs::msg::ActuatorControl>(
           node_, "~/mavros_actuator_control_out");
+  ph_mavros_position_target_ =
+      mrs_lib::PublisherHandler<mavros_msgs::msg::PositionTarget>(
+          node_, "~/mavros_position_setpoint_out");
+
+  // | --------------------- tf transformer --------------------- |
+
+  transformer_ = std::make_shared<mrs_lib::Transformer>(node_);
+  transformer_->setDefaultPrefix(_uav_name_);
+  transformer_->retryLookupNewest(true);
 
   // | ----------------------- finish init ---------------------- |
 
@@ -634,10 +649,57 @@ bool MrsUavPx4Api::callbackPositionCmd(
 /* callbackTrajectoryCmd() //{ */
 
 bool MrsUavPx4Api::callbackTrajectoryCmd(
-    [[maybe_unused]] const mrs_msgs::msg::HwApiTrajectoryCmd::ConstSharedPtr msg) {
+    const mrs_msgs::msg::HwApiTrajectoryCmd::ConstSharedPtr msg) {
+  // Eigen::Vector3d position_traj, velocity_traj, acceleration_traj;
+  // Eigen::Vector3d position_base, velocity_base, acceleration_base;
+
+  // std::string base_link_frame =  _uav_name_ + "/base_link";
+
+  // position_traj << msg->position.x, msg->position.y, msg->position.z;
+  // velocity_traj << msg->velocity.x, msg->velocity.y, msg->velocity.z;
+  // acceleration_traj << msg->acceleration.x, msg->acceleration.y, msg->acceleration.z;
+  
+  // position_base = transformer_->transformAsPoint(msg->header.stamp, position_traj, base_link_frame,
+  //                                  position_target.header.stamp);
+  // velocity_base = transformer_->transformAsVector(msg->header.stamp, velocity_traj, base_link_frame,
+  //                                  position_target.header.stamp);
+  // acceleration_base = transformer_->transformAsVector(msg->header.stamp, acceleration_traj, base_link_frame,
+  //                                      position_target.header.stamp);
+
   RCLCPP_INFO_ONCE(node_->get_logger(), "getting trajectory cmd");
 
-  return false;
+  if (!_capabilities_.accepts_trajectory_cmd) {
+    RCLCPP_ERROR_THROTTLE(node_->get_logger(), *clock_, 1000,
+                          "trajectory input is not enabled in the config file");
+    return false;
+  }
+
+  mavros_msgs::msg::PositionTarget position_target;
+
+  position_target.header = msg->header;
+
+  position_target.coordinate_frame =
+      mavros_msgs::msg::PositionTarget::FRAME_BODY_NED;
+  position_target.type_mask = 0;
+
+  position_target.position.x = msg->position.x;
+  position_target.position.y = msg->position.y;
+  position_target.position.z = msg->position.z;
+
+  position_target.velocity.x = msg->velocity.x;
+  position_target.velocity.y = msg->velocity.y;
+  position_target.velocity.z = msg->velocity.z;
+
+  position_target.acceleration_or_force.x = msg->acceleration.x;
+  position_target.acceleration_or_force.y = msg->acceleration.y;
+  position_target.acceleration_or_force.z = msg->acceleration.z;
+
+  position_target.yaw = msg->heading;
+  position_target.yaw_rate = msg->heading_rate;
+
+  ph_mavros_position_target_.publish(position_target);
+
+  return true;
 }
 
 //}
