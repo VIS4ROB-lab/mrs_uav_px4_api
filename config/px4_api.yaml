@@ -12,9 +12,9 @@ plugin:
   
   input_mode:
     control_group: false
-    attitude_rate: false
-    attitude:      false
-    trajectory:    true
+    attitude_rate: true
+    attitude:      true
+    trajectory:    false
   
   outputs:
     distance_sensor:      true

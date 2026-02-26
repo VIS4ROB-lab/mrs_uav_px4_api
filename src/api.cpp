@@ -14,7 +14,6 @@
 #include <mrs_lib/publisher_handler.h>
 #include <mrs_lib/service_client_handler.h>
 #include <mrs_lib/subscriber_handler.h>
-#include <mrs_lib/transformer.h>
 
 #include <geometry_msgs/msg/quaternion_stamped.hpp>
 #include <mavros_msgs/msg/actuator_control.hpp>
@@ -71,8 +70,6 @@ class MrsUavPx4Api : public mrs_uav_hw_api::MrsUavHwApi {
   rclcpp::Clock::SharedPtr clock_;
 
   rclcpp::CallbackGroup::SharedPtr callback_group_;
-
-  std::shared_ptr<mrs_lib::Transformer> transformer_;
 
   // | --------------------- status methods --------------------- |
 
@@ -410,12 +407,6 @@ void MrsUavPx4Api::initialize(
       mrs_lib::PublisherHandler<mavros_msgs::msg::PositionTarget>(
           node_, "~/mavros_position_setpoint_out");
 
-  // | --------------------- tf transformer --------------------- |
-
-  transformer_ = std::make_shared<mrs_lib::Transformer>(node_);
-  transformer_->setDefaultPrefix(_uav_name_);
-  transformer_->retryLookupNewest(true);
-
   // | ----------------------- finish init ---------------------- |
 
   {
@@ -654,133 +645,28 @@ bool MrsUavPx4Api::callbackTrajectoryCmd(
     return false;
   }
 
-  std::string target_frame = _uav_name_ + "/" + "map";
-
-  // Lookup the transform between input frame and target frame
-  auto tf_opt = transformer_->getTransform(target_frame, msg->header.frame_id,
-                                           msg->header.stamp);
-
-  if (!tf_opt) {
-    RCLCPP_ERROR_THROTTLE(node_->get_logger(), *clock_, 1000,
-                          "Failed to lookup transform from %s to %s",
-                          msg->header.frame_id.c_str(), target_frame.c_str());
-    return false;
-  }
-
-  auto tf = tf_opt.value();
-
-  // Transform position
-  geometry_msgs::msg::PointStamped position_in, position_out;
-  position_in.header.frame_id = msg->header.frame_id;
-  position_in.header.stamp = msg->header.stamp;
-  position_in.point = msg->position;
-
-  auto position_out_opt =
-      transformer_->transform<geometry_msgs::msg::PointStamped>(position_in,
-                                                                tf);
-  if (!position_out_opt) {
-    RCLCPP_ERROR_THROTTLE(node_->get_logger(), *clock_, 1000,
-                          "Failed to transform position");
-    return false;
-  }
-  position_out = position_out_opt.value();
-
-  // Transform velocity
-  geometry_msgs::msg::Vector3Stamped velocity_in, velocity_out;
-  velocity_in.header.frame_id = msg->header.frame_id;
-  velocity_in.header.stamp = msg->header.stamp;
-  velocity_in.vector = msg->velocity;
-
-  auto velocity_out_opt =
-      transformer_->transform<geometry_msgs::msg::Vector3Stamped>(velocity_in,
-                                                                  tf);
-  if (!velocity_out_opt) {
-    RCLCPP_ERROR_THROTTLE(node_->get_logger(), *clock_, 1000,
-                          "Failed to transform velocity");
-    return false;
-  }
-  velocity_out = velocity_out_opt.value();
-
-  // Transform acceleration
-  geometry_msgs::msg::Vector3Stamped acceleration_in, acceleration_out;
-  acceleration_in.header.frame_id = msg->header.frame_id;
-  acceleration_in.header.stamp = msg->header.stamp;
-  acceleration_in.vector = msg->acceleration;
-
-  auto acceleration_out_opt =
-      transformer_->transform<geometry_msgs::msg::Vector3Stamped>(
-          acceleration_in, tf);
-  if (!acceleration_out_opt) {
-    RCLCPP_ERROR_THROTTLE(node_->get_logger(), *clock_, 1000,
-                          "Failed to transform acceleration");
-    return false;
-  }
-  acceleration_out = acceleration_out_opt.value();
-
-  // Transform yaw and yaw_rate by transforming a quaternion with only those
-  // components
-  geometry_msgs::msg::QuaternionStamped quat_in, quat_out;
-  quat_in.header.frame_id = msg->header.frame_id;
-  quat_in.header.stamp = msg->header.stamp;
-
-  // Create quaternion from yaw (roll=0, pitch=0, yaw=msg->heading)
-  double cy = cos(msg->heading * 0.5);
-  double sy = sin(msg->heading * 0.5);
-  quat_in.quaternion.w = cy;
-  quat_in.quaternion.x = 0.0;
-  quat_in.quaternion.y = 0.0;
-  quat_in.quaternion.z = sy;
-
-  auto quat_out_opt =
-      transformer_->transform<geometry_msgs::msg::QuaternionStamped>(quat_in,
-                                                                     tf);
-  if (!quat_out_opt) {
-    RCLCPP_ERROR_THROTTLE(node_->get_logger(), *clock_, 1000,
-                          "Failed to transform yaw");
-    return false;
-  }
-  quat_out = quat_out_opt.value();
-
-  // Extract yaw from the transformed quaternion
-  double yaw_transformed =
-      atan2(2.0 * (quat_out.quaternion.w * quat_out.quaternion.z +
-                   quat_out.quaternion.x * quat_out.quaternion.y),
-            1.0 - 2.0 * (quat_out.quaternion.y * quat_out.quaternion.y +
-                         quat_out.quaternion.z * quat_out.quaternion.z));
-
-  // Transform yaw_rate (angular velocity around z-axis)
-  geometry_msgs::msg::Vector3Stamped yaw_rate_in, yaw_rate_out;
-  yaw_rate_in.header.frame_id = msg->header.frame_id;
-  yaw_rate_in.header.stamp = msg->header.stamp;
-  yaw_rate_in.vector.x = 0.0;
-  yaw_rate_in.vector.y = 0.0;
-  yaw_rate_in.vector.z = msg->heading_rate;
-
-  auto yaw_rate_out_opt =
-      transformer_->transform<geometry_msgs::msg::Vector3Stamped>(yaw_rate_in,
-                                                                  tf);
-  if (!yaw_rate_out_opt) {
-    RCLCPP_ERROR_THROTTLE(node_->get_logger(), *clock_, 1000,
-                          "Failed to transform yaw_rate");
-    return false;
-  }
-  yaw_rate_out = yaw_rate_out_opt.value();
-
   mavros_msgs::msg::PositionTarget position_target;
 
   position_target.header = msg->header;
-  position_target.header.frame_id = target_frame;
 
   position_target.coordinate_frame =
       mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
   position_target.type_mask = 0;
 
-  position_target.position = position_out.point;
-  position_target.velocity = velocity_out.vector;
-  position_target.acceleration_or_force = acceleration_out.vector;
+  position_target.position.x = msg->position.x;
+  position_target.position.y = msg->position.y;
+  position_target.position.z = msg->position.z;
 
-  position_target.yaw = yaw_transformed;
-  position_target.yaw_rate = yaw_rate_out.vector.z;
+  position_target.velocity.x = msg->velocity.x;
+  position_target.velocity.y = msg->velocity.y;
+  position_target.velocity.z = msg->velocity.z;
+
+  position_target.acceleration_or_force.x = msg->acceleration.x;
+  position_target.acceleration_or_force.y = msg->acceleration.y;
+  position_target.acceleration_or_force.z = msg->acceleration.z;
+
+  position_target.yaw = msg->heading;
+  position_target.yaw_rate = msg->heading_rate;
 
   ph_mavros_position_target_.publish(position_target);
 
