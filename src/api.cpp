@@ -104,6 +104,7 @@ class MrsUavPx4Api : public mrs_uav_hw_api::MrsUavHwApi {
   // | -------------------- service callbacks ------------------- |
 
   std::tuple<bool, std::string> callbackArming(const bool& request);
+  std::tuple<bool, std::string> callbackReboot(void);
   std::tuple<bool, std::string> callbackOffboard(void);
 
  private:
@@ -679,6 +680,55 @@ bool MrsUavPx4Api::callbackTrajectoryCmd(
 
 void MrsUavPx4Api::callbackTrackerCmd(
     [[maybe_unused]] const mrs_msgs::msg::TrackerCommand::ConstSharedPtr msg) {}
+
+//}
+
+/* callbackReboot() //{ */
+
+std::tuple<bool, std::string> MrsUavPx4Api::callbackReboot(void) {
+  std::stringstream ss;
+
+  auto srv_out = std::make_shared<mavros_msgs::srv::CommandLong::Request>();
+
+  srv_out->broadcast = false;
+  srv_out->command = 246;
+  srv_out->confirmation = true;
+
+  srv_out->param1 = 1;
+  srv_out->param2 = 0;
+  srv_out->param3 = 0;
+  srv_out->param4 = 0;
+  srv_out->param5 = 0;
+  srv_out->param6 = 0;
+  srv_out->param7 = 0;
+
+  RCLCPP_INFO(node_->get_logger(), "calling for reboot");
+
+  bool success = false;
+
+  auto response = sch_mavros_command_long_.callSync(srv_out);
+
+  if (response) {
+    success = response.value()->success;
+
+    if (success) {
+      ss << "service call for reboot was successful";
+      RCLCPP_INFO_STREAM_THROTTLE(node_->get_logger(), *clock_, 1000,
+                                  "" << ss.str());
+
+    } else {
+      ss << "service call for reboot failed";
+      RCLCPP_ERROR_STREAM_THROTTLE(node_->get_logger(), *clock_, 1000,
+                                   "" << ss.str());
+    }
+
+  } else {
+    ss << "failed to call Mavros CommandLong service";
+    RCLCPP_ERROR(node_->get_logger(), "%s", ss.str().c_str());
+  }
+
+  return {success, ss.str()};
+}
 
 //}
 
